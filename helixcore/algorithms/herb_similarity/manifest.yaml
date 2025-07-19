@@ -1,0 +1,39 @@
+name: herb_similarity
+version: 0.1.3
+description: "Calculate molecular similarity between herbal compounds using fingerprinting"
+entrypoint: "python -m algorithms.herb_similarity.service"
+inputs:
+  - name: smiles
+    type: string
+    required: true
+    description: "SMILES notation of the query molecule"
+  - name: database
+    type: array
+    required: false
+    description: "Optional database of SMILES to compare against"
+  - name: threshold
+    type: float
+    required: false
+    default: 0.7
+    description: "Similarity threshold (0-1)"
+outputs:
+  - name: score
+    type: float
+    description: "Maximum similarity score found"
+  - name: matches
+    type: array
+    description: "List of similar compounds above threshold"
+resources:
+  cpu: 2
+  memory: "4Gi"
+  gpu: 1
+  gpu_type: "nvidia-t4"
+tags:
+  - "chemistry"
+  - "similarity" 
+  - "herb"
+  - "drug-discovery"
+license: Apache-2.0
+environment:
+  CUDA_VISIBLE_DEVICES: "0"
+  OMP_NUM_THREADS: "4"

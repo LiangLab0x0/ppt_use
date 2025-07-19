@@ -1,0 +1,39 @@
+apiVersion: v2
+name: helixcore
+description: Interdisciplinary R&D pipeline framework with plug-and-play algorithm microservices
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+home: https://github.com/helixcore/helixcore
+sources:
+  - https://github.com/helixcore/helixcore
+keywords:
+  - workflow
+  - orchestration
+  - microservices
+  - temporal
+  - multi-agent
+maintainers:
+  - name: HelixCore Contributors
+    email: contact@helixcore.io
+
+dependencies:
+  - name: postgresql
+    version: "13.2.0"
+    repository: https://charts.bitnami.com/bitnami
+    condition: postgresql.enabled
+    
+  - name: redis
+    version: "18.4.0"
+    repository: https://charts.bitnami.com/bitnami
+    condition: redis.enabled
+    
+  - name: temporal
+    version: "0.15.0"
+    repository: https://charts.temporal.io
+    condition: temporal.enabled
+
+annotations:
+  artifacthub.io/license: MIT
+  artifacthub.io/operator: "false"
+  artifacthub.io/prerelease: "true"

@@ -1,0 +1,199 @@
+syntax = "proto3";
+
+package helixcore.interfaces.proto;
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+option python_package = "helixcore.interfaces.proto";
+
+// Core task specification for algorithm execution
+message TaskSpec {
+  string task_id = 1;
+  string algorithm_name = 2;
+  google.protobuf.Struct input_payload = 3;
+  map<string, string> labels = 4;
+  string workflow_id = 5;
+  google.protobuf.Timestamp created_at = 6;
+  TaskPriority priority = 7;
+  ResourceRequirements resources = 8;
+}
+
+// Task execution status
+message TaskStatus {
+  string task_id = 1;
+  TaskState state = 2;
+  google.protobuf.Struct output_payload = 3;
+  string error_message = 4;
+  google.protobuf.Timestamp started_at = 5;
+  google.protobuf.Timestamp completed_at = 6;
+  int32 retry_count = 7;
+  map<string, string> metadata = 8;
+}
+
+// Experiment result from wet-lab
+message ExperimentResult {
+  string experiment_id = 1;
+  string task_id = 2;
+  google.protobuf.Struct measurements = 3;
+  bool pass_qc = 4;
+  string operator_id = 5;
+  google.protobuf.Timestamp recorded_at = 6;
+  repeated string attachment_urls = 7;
+  map<string, string> annotations = 8;
+}
+
+// Health check response
+message HealthStatus {
+  ServiceHealth status = 1;
+  string version = 2;
+  google.protobuf.Timestamp last_check = 3;
+  map<string, string> dependencies = 4;
+  string message = 5;
+}
+
+// Algorithm manifest
+message AlgorithmManifest {
+  string name = 1;
+  string version = 2;
+  string description = 3;
+  repeated IOSpec inputs = 4;
+  repeated IOSpec outputs = 5;
+  ResourceRequirements resources = 6;
+  string license = 7;
+  repeated string tags = 8;
+  string entrypoint = 9;
+  map<string, string> environment = 10;
+}
+
+// Input/Output specification
+message IOSpec {
+  string name = 1;
+  DataType type = 2;
+  bool required = 3;
+  string description = 4;
+  google.protobuf.Value default_value = 5;
+  repeated ValidationRule validation = 6;
+}
+
+// Validation rules for inputs/outputs
+message ValidationRule {
+  ValidationType type = 1;
+  google.protobuf.Value value = 2;
+  string error_message = 3;
+}
+
+// Resource requirements
+message ResourceRequirements {
+  double cpu = 1;
+  string memory = 2;
+  int32 gpu = 3;
+  string gpu_type = 4;
+  map<string, string> annotations = 5;
+}
+
+// Workflow execution request
+message WorkflowRequest {
+  string workflow_id = 1;
+  string workflow_type = 2;
+  google.protobuf.Struct input_data = 3;
+  map<string, string> metadata = 4;
+}
+
+// Workflow status
+message WorkflowStatus {
+  string workflow_id = 1;
+  WorkflowState state = 2;
+  repeated TaskStatus tasks = 3;
+  google.protobuf.Timestamp started_at = 4;
+  google.protobuf.Timestamp updated_at = 5;
+  string error_message = 6;
+}
+
+// Enumerations
+enum TaskState {
+  TASK_STATE_UNSPECIFIED = 0;
+  TASK_STATE_PENDING = 1;
+  TASK_STATE_RUNNING = 2;
+  TASK_STATE_COMPLETED = 3;
+  TASK_STATE_FAILED = 4;
+  TASK_STATE_CANCELLED = 5;
+  TASK_STATE_RETRYING = 6;
+}
+
+enum TaskPriority {
+  TASK_PRIORITY_UNSPECIFIED = 0;
+  TASK_PRIORITY_LOW = 1;
+  TASK_PRIORITY_MEDIUM = 2;
+  TASK_PRIORITY_HIGH = 3;
+  TASK_PRIORITY_CRITICAL = 4;
+}
+
+enum ServiceHealth {
+  SERVICE_HEALTH_UNSPECIFIED = 0;
+  SERVICE_HEALTH_HEALTHY = 1;
+  SERVICE_HEALTH_DEGRADED = 2;
+  SERVICE_HEALTH_UNHEALTHY = 3;
+}
+
+enum DataType {
+  DATA_TYPE_UNSPECIFIED = 0;
+  DATA_TYPE_STRING = 1;
+  DATA_TYPE_INTEGER = 2;
+  DATA_TYPE_FLOAT = 3;
+  DATA_TYPE_BOOLEAN = 4;
+  DATA_TYPE_ARRAY = 5;
+  DATA_TYPE_OBJECT = 6;
+  DATA_TYPE_FILE = 7;
+}
+
+enum ValidationType {
+  VALIDATION_TYPE_UNSPECIFIED = 0;
+  VALIDATION_TYPE_MIN = 1;
+  VALIDATION_TYPE_MAX = 2;
+  VALIDATION_TYPE_PATTERN = 3;
+  VALIDATION_TYPE_LENGTH = 4;
+  VALIDATION_TYPE_ENUM = 5;
+}
+
+enum WorkflowState {
+  WORKFLOW_STATE_UNSPECIFIED = 0;
+  WORKFLOW_STATE_RUNNING = 1;
+  WORKFLOW_STATE_COMPLETED = 2;
+  WORKFLOW_STATE_FAILED = 3;
+  WORKFLOW_STATE_CANCELLED = 4;
+  WORKFLOW_STATE_TERMINATED = 5;
+}
+
+// Service definitions
+service AlgorithmService {
+  rpc Predict(TaskSpec) returns (google.protobuf.Struct);
+  rpc Health(google.protobuf.Empty) returns (HealthStatus);
+  rpc GetManifest(google.protobuf.Empty) returns (AlgorithmManifest);
+  rpc Cancel(TaskSpec) returns (google.protobuf.Empty);
+}
+
+service WorkflowService {
+  rpc StartWorkflow(WorkflowRequest) returns (WorkflowStatus);
+  rpc GetWorkflowStatus(WorkflowRequest) returns (WorkflowStatus);
+  rpc SignalWorkflow(ExperimentResult) returns (google.protobuf.Empty);
+  rpc CancelWorkflow(WorkflowRequest) returns (google.protobuf.Empty);
+}
+
+service RegistryService {
+  rpc RegisterAlgorithm(AlgorithmManifest) returns (google.protobuf.Empty);
+  rpc ListAlgorithms(google.protobuf.Empty) returns (AlgorithmList);
+  rpc GetAlgorithm(AlgorithmQuery) returns (AlgorithmManifest);
+  rpc UnregisterAlgorithm(AlgorithmQuery) returns (google.protobuf.Empty);
+}
+
+// Additional messages for registry
+message AlgorithmList {
+  repeated AlgorithmManifest algorithms = 1;
+}
+
+message AlgorithmQuery {
+  string name = 1;
+  string version = 2;
+}

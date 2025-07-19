@@ -1,0 +1,70 @@
+@startuml HelixCore Sequence Overview
+!theme vibrant
+
+title HelixCore Multi-Agent Workflow Execution
+
+participant "User/Researcher" as User
+participant "Portal UI" as UI
+participant "API Gateway" as API
+participant "PlannerAgent" as Planner
+participant "ExecutorAgent" as Executor
+participant "CriticAgent" as Critic
+participant "Temporal\nWorkflow" as Temporal
+participant "Algorithm\nService" as Algo
+participant "Plugin\nRegistry" as Registry
+participant "Lab\nOperator" as Lab
+
+== Initialization ==
+User -> UI: Submit research goal
+UI -> API: POST /workflows/create
+API -> Planner: Plan request
+
+== Planning Phase ==
+Planner -> Registry: Get available algorithms
+Registry --> Planner: Algorithm manifests
+Planner -> Planner: Decompose goal into tasks
+Planner -> Executor: Task execution plan
+
+== Execution Phase ==
+Executor -> Temporal: Start workflow
+activate Temporal
+
+loop For each task
+    Temporal -> Registry: Lookup algorithm
+    Registry --> Temporal: Algorithm endpoint
+    
+    Temporal -> Algo: Execute task (gRPC)
+    activate Algo
+    Algo -> Algo: Process inputs
+    Algo --> Temporal: Task result
+    deactivate Algo
+    
+    Temporal -> Executor: Task completed
+    Executor -> Critic: Evaluate result
+    
+    alt Result needs improvement
+        Critic -> Planner: Request refinement
+        Planner -> Executor: Updated plan
+    else Result acceptable
+        Critic -> Executor: Continue
+    end
+end
+
+== Human-in-the-Loop ==
+Lab -> Temporal: Signal experiment result
+note right: Wet-lab validation
+Temporal -> Temporal: Process signal
+alt QC passed
+    Temporal -> Temporal: Continue as new (v2)
+else QC failed
+    Temporal -> Executor: Compensate
+end
+
+== Completion ==
+Temporal -> Executor: Workflow completed
+deactivate Temporal
+Executor -> API: Final results
+API -> UI: Display results
+UI -> User: Research complete
+
+@enduml

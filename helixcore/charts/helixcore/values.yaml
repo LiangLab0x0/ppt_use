@@ -1,0 +1,170 @@
+# Default values for helixcore
+replicaCount: 1
+
+image:
+  repository: ghcr.io/helixcore/helixcore
+  pullPolicy: IfNotPresent
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 80
+  grpcPort: 50051
+
+# Ingress configuration
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: helixcore.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+
+# Resource limits
+resources:
+  limits:
+    cpu: 2000m
+    memory: 4Gi
+  requests:
+    cpu: 500m
+    memory: 1Gi
+
+# Autoscaling configuration
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity rules
+affinity: {}
+
+# Environment variables
+env:
+  - name: LOG_LEVEL
+    value: "INFO"
+  - name: OTEL_EXPORTER_OTLP_ENDPOINT
+    value: "http://otel-collector:4317"
+
+# Temporal configuration
+temporal:
+  enabled: true
+  namespace: helixcore
+  frontend:
+    replicaCount: 1
+  history:
+    replicaCount: 1
+  matching:
+    replicaCount: 1
+  worker:
+    replicaCount: 2
+
+# PostgreSQL configuration
+postgresql:
+  enabled: true
+  auth:
+    postgresPassword: helixcore
+    database: helixcore
+  primary:
+    persistence:
+      enabled: true
+      size: 10Gi
+
+# Redis configuration
+redis:
+  enabled: true
+  auth:
+    enabled: true
+    password: helixcore
+  master:
+    persistence:
+      enabled: true
+      size: 5Gi
+
+# Algorithm services configuration
+algorithms:
+  herbSimilarity:
+    enabled: true
+    replicas: 2
+    resources:
+      limits:
+        cpu: 2000m
+        memory: 4Gi
+        nvidia.com/gpu: 1
+      requests:
+        cpu: 1000m
+        memory: 2Gi
+        
+  linrnaDesign:
+    enabled: false
+    replicas: 1
+    resources:
+      limits:
+        cpu: 4000m
+        memory: 8Gi
+      requests:
+        cpu: 2000m
+        memory: 4Gi
+
+# Multi-agent configuration
+agents:
+  planner:
+    enabled: true
+    replicas: 1
+    llmModel: "gpt-4"
+    temperature: 0.7
+    
+  executor:
+    enabled: true
+    replicas: 2
+    
+  critic:
+    enabled: true
+    replicas: 1
+    llmModel: "gpt-4"
+    temperature: 0.3
+
+# Monitoring configuration
+monitoring:
+  enabled: true
+  prometheus:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      interval: 30s
+  grafana:
+    enabled: true
+    dashboards:
+      enabled: true
+
+# Security configuration
+security:
+  podSecurityPolicy:
+    enabled: true
+  networkPolicy:
+    enabled: true
+  tls:
+    enabled: true
+    certManager:
+      enabled: true
+
+# Backup configuration
+backup:
+  enabled: false
+  schedule: "0 2 * * *"
+  retention: 30
